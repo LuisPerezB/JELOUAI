@@ -1,0 +1,298 @@
+openapi: 3.0.3
+info:
+  title: Customers API
+  description: Microservicio de gestión de clientes
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3001
+    description: Local
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    ServiceToken:
+      type: http
+      scheme: bearer
+      description: TOKEN interno para comunicación entre servicios (SERVICE_TOKEN)
+
+  schemas:
+    Customer:
+      type: object
+      properties:
+        id:         { type: integer, example: 1 }
+        name:       { type: string,  example: "Ana García" }
+        email:      { type: string,  format: email, example: "ana@example.com" }
+        phone:      { type: string,  example: "0991234567" }
+        created_at: { type: string,  format: date-time }
+
+    CreateCustomerRequest:
+      type: object
+      required: [name, email, phone]
+      properties:
+        name:  { type: string, minLength: 2, maxLength: 255, example: "Ana García" }
+        email: { type: string, format: email, example: "ana@example.com" }
+        phone: { type: string, minLength: 10, maxLength: 10, example: "0991234567" }
+
+    UpdateCustomerRequest:
+      type: object
+      properties:
+        name:  { type: string, minLength: 2, maxLength: 255, example: "Ana García" }
+        email: { type: string, format: email, example: "ana@example.com" }
+        phone: { type: string, minLength: 10, maxLength: 10, example: "0991234567" }
+
+    Pagination:
+      type: object
+      properties:
+        limit:       { type: integer, example: 20 }
+        next_cursor: { type: integer, nullable: true, example: 5 }
+        has_next:    { type: boolean, example: false }
+
+    Error:
+      type: object
+      properties:
+        error: { type: string, example: "Mensaje de error" }
+
+    ValidationError:
+      type: object
+      properties:
+        error:   { type: string, example: "Validación fallida" }
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              field:   { type: string, example: "email" }
+              message: { type: string, example: "Email inválido" }
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      tags: [Health]
+      responses:
+        '200':
+          description: Servicio activo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:    { type: string, example: "ok" }
+                  service:   { type: string, example: "customers-api" }
+                  timestamp: { type: string, format: date-time }
+
+  /auth/token:
+    post:
+      summary: Obtener JWT
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string, example: "admin" }
+                password: { type: string, example: "admin123" }
+      responses:
+        '200':
+          description: Token generado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string, example: "eyJhbGci..." }
+        '401':
+          description: Credenciales inválidas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /customers:
+    get:
+      summary: Listar clientes con búsqueda y paginación cursor
+      tags: [Customers]
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - in: query
+          name: search
+          schema: { type: string }
+          description: Búsqueda por nombre o email
+        - in: query
+          name: cursor
+          schema: { type: integer }
+          description: ID del último elemento de la página anterior
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, maximum: 100 }
+          description: Cantidad de resultados por página
+      responses:
+        '200':
+          description: Lista de clientes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Customer' }
+                  pagination: { $ref: '#/components/schemas/Pagination' }
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+    post:
+      summary: Crear cliente
+      tags: [Customers]
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateCustomerRequest' }
+      responses:
+        '201':
+          description: Cliente creado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Customer' }
+        '400':
+          description: Validación fallida
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+        '409':
+          description: Email ya registrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /customers/{id}:
+    get:
+      summary: Obtener cliente por ID
+      tags: [Customers]
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Cliente encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Customer' }
+        '404':
+          description: Cliente no encontrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+    put:
+      summary: Actualizar cliente
+      tags: [Customers]
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateCustomerRequest' }
+      responses:
+        '200':
+          description: Cliente actualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Customer' }
+        '404':
+          description: Cliente no encontrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '409':
+          description: Email ya registrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+    delete:
+      summary: Eliminar cliente (soft delete)
+      tags: [Customers]
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Cliente eliminado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "Cliente eliminado correctamente" }
+        '404':
+          description: Cliente no encontrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /internal/customers/{id}:
+    get:
+      summary: Obtener cliente por ID (uso interno entre servicios)
+      tags: [Internal]
+      security: [{ ServiceToken: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Cliente encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Customer' }
+        '401':
+          description: Token no proporcionado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '403':
+          description: Service token inválido
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '404':
+          description: Cliente no encontrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }

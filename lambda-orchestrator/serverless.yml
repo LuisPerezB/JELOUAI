@@ -1,0 +1,28 @@
+service: lambda-orchestrator
+
+provider:
+  name: aws
+  runtime: nodejs22.x
+  region: us-east-1
+  environment:
+    CUSTOMERS_API_URL: 'http://127.0.0.1:3001'
+    ORDERS_API_URL: 'http://127.0.0.1:3002'
+    SERVICE_TOKEN: 'internal-service-secret'
+    AUTH_USERNAME: 'admin'
+    AUTH_PASSWORD: 'admin123'
+
+functions:
+  createAndConfirmOrder:
+    handler: handler.createAndConfirmOrder
+    events:
+      - httpApi:
+          path: /orchestrator/create-and-confirm-order
+          method: POST
+
+plugins:
+  - serverless-offline
+
+custom:
+  serverless-offline:
+    httpPort: 3000
+    noPrependStageInUrl: true

@@ -1,0 +1,19 @@
+{
+  "name": "lambda-orchestrator",
+  "version": "1.0.0",
+  "description": "Lambda orquestador - crea y confirma pedidos",
+  "main": "handler.js",
+  "scripts": {
+    "dev": "serverless offline",
+    "deploy": "serverless deploy",
+    "build": "echo 'No build step required'"
+  },
+  "dependencies": {
+    "node-fetch": "^2.7.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "serverless": "^3.38.0",
+    "serverless-offline": "^13.3.0"
+  }
+}

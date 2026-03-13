@@ -1,0 +1,28 @@
+{
+  "name": "orders-api",
+  "version": "1.0.0",
+  "description": "Orders API - Microservicio de pedidos",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "build": "echo 'No build step required for Node.js'",
+    "migrate": "knex migrate:latest",
+    "seed": "knex seed:run",
+    "test": "echo 'No tests yet'"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "knex": "^3.1.0",
+    "mysql2": "^3.6.5",
+    "zod": "^3.22.4",
+    "jsonwebtoken": "^9.0.2",
+    "dotenv": "^16.3.1",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "node-fetch": "^2.7.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
